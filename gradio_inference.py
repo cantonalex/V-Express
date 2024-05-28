@@ -8,7 +8,8 @@ def run_inference(reference_image_path, audio_path, kps_path, retarget_strategy)
         "--reference_image_path", reference_image_path,
         "--audio_path", audio_path,
         "--kps_path", kps_path,
-        "--retarget_strategy", retarget_strategy
+        "--retarget_strategy", retarget_strategy,
+        "--output_path", "output.mp4"
     ]
     result = subprocess.run(command, capture_output=True, text=True)
     
@@ -17,25 +18,21 @@ def run_inference(reference_image_path, audio_path, kps_path, retarget_strategy)
     print("Captured stderr:")
     print(result.stderr)
     
-    output_path_match = re.search(r"--output_path\s+(\S+)", result.stdout)
-    if output_path_match:
-        output_path = output_path_match.group(1)
-    else:
-        output_path = None
+    output_path = "output.mp4"
     
     return result.stdout, output_path
 
 iface = gr.Interface(
     fn=run_inference,
     inputs=[
-        gr.inputs.Textbox(label="Reference Image Path", default="./test_samples/short_case/10/ref.jpg"),
-        gr.inputs.Textbox(label="Audio Path", default="./test_samples/short_case/10/aud.mp3"),
-        gr.inputs.Textbox(label="KPS Path", default="./test_samples/short_case/10/kps.pth"),
-        gr.inputs.Dropdown(choices=["fix_face", "no_retarget", "offset_retarget", "naive_retarget"], label="Retarget Strategy", default="no_retarget")
+        gr.Textbox(label="Reference Image Path", value="./test_samples/short_case/10/ref.jpg"),
+        gr.Textbox(label="Audio Path", value="./test_samples/short_case/10/aud.mp3"),
+        gr.Textbox(label="KPS Path", value="./test_samples/short_case/10/kps.pth"),
+        gr.Dropdown(choices=["fix_face", "no_retarget", "offset_retarget", "naive_retarget"], label="Retarget Strategy", value="no_retarget")
     ],
     outputs=[
-        gr.outputs.Textbox(label="Output Log"),
-        gr.outputs.Video(label="Generated Video")
+        gr.Textbox(label="Output Log"),
+        gr.Video(label="Generated Video")
     ],
     title="V-Express Inference",
     description="Generate video using V-Express pipeline."
