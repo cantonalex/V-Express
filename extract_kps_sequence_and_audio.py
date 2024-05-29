@@ -27,7 +27,7 @@ def run_inference(reference_image_path, audio_path, kps_path):
         "--audio_path", audio_path,
         "--kps_path", kps_path,
         "--output_path", "output.mp4",
-        "--num_inference_steps", "10",  
+        "--num_inference_steps", "5",  
     ]
     result = subprocess.run(command, capture_output=True, text=True)
     output_log = f"Captured stdout:\n{result.stdout}\n\nCaptured stderr:\n{result.stderr}"
