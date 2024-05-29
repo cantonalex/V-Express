@@ -35,7 +35,7 @@ def extract_kps_and_audio(video_path, kps_sequence_save_path, audio_save_path, d
 
 def run_inference(reference_image_path, audio_path, kps_path, retarget_strategy):
     command = [
-        "python", "V-Express/inference.py",
+        "python", "inference.py",
         "--reference_image_path", reference_image_path,
         "--audio_path", audio_path,
         "--kps_path", kps_path,
