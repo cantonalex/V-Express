@@ -19,11 +19,11 @@ def extract_kps_and_audio(video_path, kps_sequence_save_path, audio_save_path, d
     output_log = f"Captured stdout:\n{result.stdout}\n\nCaptured stderr:\n{result.stderr}"
     return output_log, kps_sequence_save_path, audio_save_path
 
-def run_inference(video_path, audio_path, kps_path):
+def run_inference(reference_image_path, audio_path, kps_path):
     # Run the inference script with necessary parameters
     command = [
         "python", "inference.py",
-        "--video_path", video_path,
+        "--reference_image_path", reference_image_path,
         "--audio_path", audio_path,
         "--kps_path", kps_path,
         "--output_path", "output.mp4"
@@ -33,16 +33,13 @@ def run_inference(video_path, audio_path, kps_path):
     output_path = "output.mp4"
     return output_log, output_path
 
-def process_video(video_path, new_audio_path):
+def process_video(video_path, reference_image_path):
     # Use default paths for the keypoint and audio save locations
     kps_path = "./test_samples/short_case/10/kps.pth"
     audio_path = "./test_samples/short_case/10/aud.mp3"
     
-    # Extract keypoints and original audio from the video
-    extract_log, kps_path, _ = extract_kps_and_audio(video_path, kps_path, audio_path)
-    
-    # Run inference with the new audio
-    inference_log, output_path = run_inference(video_path, new_audio_path, kps_path)
+    extract_log, kps_path, audio_path = extract_kps_and_audio(video_path, kps_path, audio_path)
+    inference_log, output_path = run_inference(reference_image_path, audio_path, kps_path)
     
     output_log = f"{extract_log}\n\n{inference_log}"
     return output_log, output_path
@@ -51,7 +48,7 @@ iface = gr.Interface(
     fn=process_video,
     inputs=[
         gr.Textbox(label="Video Path", value="./test_samples/short_case/10/gt.mp4"),
-        gr.Textbox(label="New Audio Path", value="./test_samples/short_case/10/new_audio.mp3")
+        gr.Textbox(label="Reference Image Path", value="./test_samples/short_case/10/ref.jpg")
     ],
     outputs=[
         gr.Textbox(label="Output Log"),
