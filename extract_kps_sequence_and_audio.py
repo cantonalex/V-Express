@@ -33,7 +33,21 @@ def extract_kps_and_audio(video_path, kps_sequence_save_path, audio_save_path, d
     torch.save(kps_sequence, kps_sequence_save_path)
     return kps_sequence_save_path, audio_save_path
 
-def run_inference(reference_image_path, audio_path, kps_path, retarget_strategy):
+def run_inference(reference_image_path, video_path, retarget_strategy):
+    # Command to extract keypoints and audio
+    extract_command = [
+        "python", "scripts/extract_kps_sequence_and_audio.py",
+        "--video_path", video_path,
+        "--kps_sequence_save_path", "./test_samples/short_case/10/kps.pth",
+        "--audio_save_path", "./test_samples/short_case/10/aud.mp3"
+    ]
+    subprocess.run(extract_command, capture_output=True, text=True)
+
+    # Paths for keypoints and audio
+    kps_path = "./test_samples/short_case/10/kps.pth"
+    audio_path = "./test_samples/short_case/10/aud.mp3"
+
+    # Command for further inference
     command = [
         "python", "inference.py",
         "--reference_image_path", reference_image_path,
