@@ -44,14 +44,10 @@ def run_inference(reference_image_path, audio_path, kps_path, retarget_strategy)
     ]
     result = subprocess.run(command, capture_output=True, text=True)
     
-    print("Captured stdout:")
-    print(result.stdout)
-    print("Captured stderr:")
-    print(result.stderr)
-    
+    output_log = f"Captured stdout:\n{result.stdout}\n\nCaptured stderr:\n{result.stderr}"
     output_path = "output.mp4"
     
-    return result.stdout, output_path
+    return output_log, output_path
 
 def process_video(video_path, reference_image_path, retarget_strategy):
     kps_path, audio_path = extract_kps_and_audio(video_path, "kps.pth", "audio.mp3")
