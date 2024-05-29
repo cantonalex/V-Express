@@ -14,65 +14,48 @@ def extract_kps_and_audio(video_path, kps_sequence_save_path, audio_save_path, d
         root=insightface_model_path,
     )
     app.prepare(ctx_id=0, det_size=(height, width))
-
     os.system(f'{get_ffmpeg_exe()} -i "{video_path}" -y -vn "{audio_save_path}"')
-
+    
     kps_sequence = []
     video_capture = cv2.VideoCapture(video_path)
     frame_idx = 0
+    
     while video_capture.isOpened():
         ret, frame = video_capture.read()
         if not ret:
             break
         faces = app.get(frame)
         assert len(faces) == 1, f'There are {len(faces)} faces in the {frame_idx}-th frame. Only one face is supported.'
-
         kps = faces[0].kps[:3]
         kps_sequence.append(kps)
         frame_idx += 1
+    
     torch.save(kps_sequence, kps_sequence_save_path)
+    
     return kps_sequence_save_path, audio_save_path
 
-def run_inference(reference_image_path, video_path, retarget_strategy):
-    # Command to extract keypoints and audio
-    extract_command = [
-        "python", "scripts/extract_kps_sequence_and_audio.py",
-        "--video_path", video_path,
-        "--kps_sequence_save_path", "./test_samples/short_case/10/kps.pth",
-        "--audio_save_path", "./test_samples/short_case/10/aud.mp3"
-    ]
-    subprocess.run(extract_command, capture_output=True, text=True)
-
-    # Paths for keypoints and audio
-    kps_path = "./test_samples/short_case/10/kps.pth"
-    audio_path = "./test_samples/short_case/10/aud.mp3"
-
-    # Command for further inference
+def run_inference(video_path, kps_sequence_save_path, audio_save_path):
     command = [
         "python", "inference.py",
-        "--reference_image_path", reference_image_path,
-        "--audio_path", audio_path,
-        "--kps_path", kps_path,
-        "--retarget_strategy", retarget_strategy,
+        "--video_path", video_path,
+        "--kps_sequence_save_path", kps_sequence_save_path,
+        "--audio_save_path", audio_save_path,
         "--output_path", "output.mp4"
     ]
     result = subprocess.run(command, capture_output=True, text=True)
-    
     output_log = f"Captured stdout:\n{result.stdout}\n\nCaptured stderr:\n{result.stderr}"
     output_path = "output.mp4"
-    
     return output_log, output_path
 
-def process_video(video_path, reference_image_path, retarget_strategy):
+def process_video(video_path, reference_image_path):
     kps_path, audio_path = extract_kps_and_audio(video_path, "kps.pth", "audio.mp3")
-    return run_inference(reference_image_path, audio_path, kps_path, retarget_strategy)
+    return run_inference(video_path, kps_path, audio_path)
 
 iface = gr.Interface(
     fn=process_video,
     inputs=[
         gr.Textbox(label="Video Path", value="./test_samples/short_case/10/video.mp4"),
-        gr.Textbox(label="Reference Image Path", value="./test_samples/short_case/10/ref.jpg"),
-        gr.Dropdown(choices=["fix_face", "no_retarget", "offset_retarget", "naive_retarget"], label="Retarget Strategy", value="no_retarget")
+        gr.Textbox(label="Reference Image Path", value="./test_samples/short_case/10/ref.jpg")
     ],
     outputs=[
         gr.Textbox(label="Output Log"),
