@@ -19,6 +19,35 @@ from pipelines import VExpressPipeline
 from pipelines.utils import draw_kps_image, save_video
 from pipelines.utils import retarget_kps
 
+import dlib
+
+# Load the pre-trained facial landmark detector
+detector = dlib.get_frontal_face_detector()
+predictor = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
+
+def extract_lips(image):
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    faces = detector(gray)
+    for face in faces:
+        landmarks = predictor(gray, face)
+        points = []
+        for i in range(48, 68):  # Indices for lips landmarks
+            points.append((landmarks.part(i).x, landmarks.part(i).y))
+        mask = np.zeros_like(image)
+        points = np.array(points, dtype=np.int32)
+        cv2.fillPoly(mask, [points], (255, 255, 255))
+        lips = cv2.bitwise_and(image, mask)
+        return lips
+    return None
+
+def overlay_lips(original_frame, lips_frame):
+    gray_lips = cv2.cvtColor(lips_frame, cv2.COLOR_BGR2GRAY)
+    _, mask = cv2.threshold(gray_lips, 1, 255, cv2.THRESH_BINARY)
+    mask_inv = cv2.bitwise_not(mask)
+    original_bg = cv2.bitwise_and(original_frame, original_frame, mask=mask_inv)
+    lips_fg = cv2.bitwise_and(lips_frame, lips_frame, mask=mask)
+    combined = cv2.add(original_bg, lips_fg)
+    return combined
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -267,8 +296,31 @@ def main():
     if isinstance(video_tensor, np.ndarray):
         video_tensor = torch.from_numpy(video_tensor)
 
-    save_video(video_tensor, args.audio_path, args.output_path, args.fps)
-    print(f'The generated video has been saved at {args.output_path}.')
+    # Load original video
+    original_video_path = args.video_path
+    original_video = cv2.VideoCapture(original_video_path)
+    frame_width = int(original_video.get(cv2.CAP_PROP_FRAME_WIDTH))
+    frame_height = int(original_video.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    fps = original_video.get(cv2.CAP_PROP_FPS)
+    out = cv2.VideoWriter(args.output_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (frame_width, frame_height))
+
+    # Process each frame
+    for i in range(video_length):
+        ret, original_frame = original_video.read()
+        if not ret:
+            break
+        generated_frame = video_tensor[i].permute(1, 2, 0).cpu().numpy() * 255
+        generated_frame = generated_frame.astype(np.uint8)
+        lips_frame = extract_lips(generated_frame)
+        if lips_frame is not None:
+            combined_frame = overlay_lips(original_frame, lips_frame)
+            out.write(combined_frame)
+        else:
+            out.write(original_frame)
+
+    original_video.release()
+    out.release()
+    print(f'The generated video with overlaid lips has been saved at {args.output_path}.')
 
 
 if __name__ == '__main__':
